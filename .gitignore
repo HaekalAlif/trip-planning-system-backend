@@ -50,3 +50,5 @@ Desktop.ini
 
 # Logs for pm2
 pmlogs
+
+/src/generated/prisma
