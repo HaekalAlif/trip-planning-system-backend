@@ -14,60 +14,71 @@ enum TripStatus {
   cancelled
 }
 
+enum UserRole {
+  ADMIN
+  DRIVER
+}
+
 model User {
   id         Int      @id @default(autoincrement())
   name       String
   email      String   @unique
   password   String
   phone      String
-  role       String
+  role       UserRole @map("role")
   is_active  Boolean  @default(true) @map("is_active")
   is_deleted Boolean  @default(false) @map("is_deleted")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
-  trips      Trip[]   @relation("DriverTrips")
-  tripHistory TripHistory[]
+
+  trips         Trip[]         @relation("DriverTrips")
+  tripHistory   TripHistory[]
+  refreshTokens RefreshToken[] // <- added opposite relation
+
   @@map("user")
 }
 
 model Vehicle {
-  id           Int      @id @default(autoincrement())
-  plateNumber  String   @unique @map("plate_number")
-  brand        String
-  model        String
-  year         Int?
-  is_deleted   Boolean  @default(false) @map("is_deleted")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  trips        Trip[]
+  id          Int      @id @default(autoincrement())
+  plateNumber String   @unique @map("plate_number")
+  brand       String
+  model       String
+  year        Int?
+  is_deleted  Boolean  @default(false) @map("is_deleted")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  trips Trip[]
+
   @@map("vehicle")
 }
 
 model Trip {
-  id            Int           @id @default(autoincrement())
+  id            Int        @id @default(autoincrement())
   title         String
   description   String?
-  startLocation String        @map("start_location")
-  startLat      Float         @map("start_lat")
-  startLng      Float         @map("start_lng")
-  endLocation   String        @map("end_location")
-  endLat        Float         @map("end_lat")
-  endLng        Float         @map("end_lng")
+  startLocation String     @map("start_location")
+  startLat      Float      @map("start_lat")
+  startLng      Float      @map("start_lng")
+  endLocation   String     @map("end_location")
+  endLat        Float      @map("end_lat")
+  endLng        Float      @map("end_lng")
   status        TripStatus
-  driverId      Int?          @map("driver_id")
-  vehicleId     Int?          @map("vehicle_id")
-  fuelCost      Float?        @map("fuel_cost")
-  tollCost      Float?        @map("toll_cost")
-  startTime     DateTime?     @map("start_time")
-  endTime       DateTime?     @map("end_time")
-  is_deleted    Boolean       @default(false) @map("is_deleted")
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
+  driverId      Int?       @map("driver_id")
+  vehicleId     Int?       @map("vehicle_id")
+  fuelCost      Float?     @map("fuel_cost")
+  tollCost      Float?     @map("toll_cost")
+  startTime     DateTime?  @map("start_time")
+  endTime       DateTime?  @map("end_time")
+  is_deleted    Boolean    @default(false) @map("is_deleted")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
 
-  driver        User?         @relation("DriverTrips", fields: [driverId], references: [id])
-  vehicle       Vehicle?      @relation(fields: [vehicleId], references: [id])
-  waypoints     TripWaypoint[]
-  histories     TripHistory[]
+  driver    User?          @relation("DriverTrips", fields: [driverId], references: [id])
+  vehicle   Vehicle?       @relation(fields: [vehicleId], references: [id])
+  waypoints TripWaypoint[]
+  histories TripHistory[]
+
   @@map("trip")
 }
 
@@ -82,33 +93,49 @@ model TripWaypoint {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  trip       Trip     @relation(fields: [tripId], references: [id])
+  trip Trip @relation(fields: [tripId], references: [id])
+
   @@map("trip_waypoint")
 }
 
 model TripHistory {
-  id           Int        @id @default(autoincrement())
-  tripId       Int        @map("trip_id")
-  driverId     Int        @map("driver_id")
-  status       TripStatus
-  distance     Float
-  duration     Float
-  fuelCost     Float      @map("fuel_cost")
-  tollCost     Float      @map("toll_cost")
-  completedAt  DateTime?  @map("completed_at")
-  is_deleted   Boolean    @default(false) @map("is_deleted")
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
+  id          Int        @id @default(autoincrement())
+  tripId      Int        @map("trip_id")
+  driverId    Int        @map("driver_id")
+  status      TripStatus
+  distance    Float?
+  duration    Float?
+  fuelCost    Float      @map("fuel_cost")
+  tollCost    Float      @map("toll_cost")
+  completedAt DateTime?  @map("completed_at")
+  is_deleted  Boolean    @default(false) @map("is_deleted")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
 
-  trip         Trip       @relation(fields: [tripId], references: [id])
-  driver       User       @relation(fields: [driverId], references: [id])
+  trip   Trip @relation(fields: [tripId], references: [id])
+  driver User @relation(fields: [driverId], references: [id])
+
   @@map("trip_history")
 }
 
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  jti       String   @unique
+  userId    Int      @map("user_id")
+  revoked   Boolean  @default(false)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("refresh_token")
+}
+
 model Settings {
-  id                   Int      @id @default(autoincrement())
-  fuelPricePerLiter    Float    @map("fuel_price_per_liter")
-  createdAt            DateTime @default(now()) @map("created_at")
-  updatedAt            DateTime @updatedAt @map("updated_at")
+  id                Int      @id @default(autoincrement())
+  fuelPricePerLiter Float    @map("fuel_price_per_liter")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
   @@map("settings")
 }
