@@ -146,3 +146,27 @@ export async function logout(refreshTokenStr?: string) {
     // ignore invalid token
   }
 }
+
+// new: get current authenticated user (sanitized)
+export async function me(userId: number) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      role: true,
+      is_active: true,
+      is_deleted: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  if (!user || (user as any).is_deleted) {
+    throw new Error("User not found");
+  }
+
+  return user;
+}

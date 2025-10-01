@@ -2,6 +2,7 @@ import { Router } from "express";
 import * as authService from "../services/auth";
 import { set_refresh_cookie, clear_refresh_cookie } from "../jwt";
 import { RegisterDTO, LoginDTO } from "../dto/auth";
+import { authenticate } from "../middlewares/auth";
 
 const router = Router();
 
@@ -50,6 +51,18 @@ router.post("/logout", async (req, res) => {
     res.json({ ok: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /auth/me
+router.get("/me", authenticate, async (req, res) => {
+  try {
+    const userId = (req as any).user?.userId;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    const user = await authService.me(userId);
+    res.json({ user });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
   }
 });
 
